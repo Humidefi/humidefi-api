@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiCreatedResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiCreatedResponse, ApiResponse } from '@nestjs/swagger';
 import { DexService } from './dex.service';
 import { LiquidityPoolEntity } from './entities/liquidity-pool.entity';
 import { AccountLiquidityPoolEntity } from './entities/account-liquidity-pool.entity';
@@ -19,80 +19,110 @@ export class DexController {
   ) { }
 
   @Get('/get/liquidity-pools')
-  getLiquidityPools(): Promise<LiquidityPoolEntity[]> {
-    return this.dexService.getLiquidityPools();
+  @ApiResponse({ status: 200, description: '' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async getLiquidityPools(): Promise<LiquidityPoolEntity[]> {
+    return await this.dexService.getLiquidityPools();
   }
 
   @Get('/get/liquidity-pool/:asset_x/:asset_y')
-  getLiquidityPool(
+  @ApiResponse({ status: 200, description: '' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async getLiquidityPool(
     @Param('asset_x') asset_x: number,
     @Param('asset_y') asset_y: number
   ): Promise<LiquidityPoolEntity> {
-    return this.dexService.getLiquidityPool(asset_x, asset_y);
+    return await this.dexService.getLiquidityPool(asset_x, asset_y);
   }
 
   @Get('/get/account-liquidity-pool-by-account/:keypair')
-  getAccountLiquidityPoolByAccount(@Param('keypair') keypair: string): Promise<AccountLiquidityPoolEntity[]> {
-    return this.dexService.getAccountLiquidityPoolByAccount(keypair);
+  @ApiResponse({ status: 200, description: '' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async getAccountLiquidityPoolByAccount(@Param('keypair') keypair: string): Promise<AccountLiquidityPoolEntity[]> {
+    return await this.dexService.getAccountLiquidityPoolByAccount(keypair);
   }
 
   @Post('/extrinsic/create-liquidity-pool')
-  @ApiCreatedResponse({
-    description: 'liquidity pool extrinsic created succesfully',
-    type: CreateLiquidityPoolExtrinsicDto,
-    isArray: false,
-  })
-  createLiquidityPoolExtrinsic(@Body() data: CreateLiquidityPoolExtrinsicDto): Promise<any> {
-    return this.dexService.createLiquidityPoolExtrinsic(data);
+  @ApiResponse({ status: 200, description: 'The dex "createLiquidityPool" extrinsic has been successfully generated.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async createLiquidityPoolExtrinsic(@Body() data: CreateLiquidityPoolExtrinsicDto): Promise<any> {
+    try {
+      return await this.dexService.createLiquidityPoolExtrinsic(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('/extrinsic/provide-liquidity')
-  @ApiCreatedResponse({
-    description: 'provided liquidity extrinsic created succesfully',
-    type: ProvideLiquidityExtrinsicDto,
-    isArray: false,
-  })
-  provideLiquidityExtrinsic(@Body() data: ProvideLiquidityExtrinsicDto): Promise<any> {
-    return this.dexService.provideLiquidityExtrinsic(data);
+  @ApiResponse({ status: 200, description: 'The dex "provideLiquidity" extrinsic has been successfully generated.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async provideLiquidityExtrinsic(@Body() data: ProvideLiquidityExtrinsicDto): Promise<any> {
+    try {
+      return await this.dexService.provideLiquidityExtrinsic(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('/extrinsic/redeem-liquidity')
-  @ApiCreatedResponse({
-    description: 'redeem liquidity extrinsic created succesfully',
-    type: RedeemLiquidityExtrinsicDto,
-    isArray: false,
-  })
-  redeemLiquidityExtrinsic(@Body() data: RedeemLiquidityExtrinsicDto): Promise<any> {
-    return this.dexService.redeemLiquidityExtrinsic(data);
+  @ApiResponse({ status: 200, description: 'The dex "redeemLiquidity" extrinsic has been successfully generated.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async redeemLiquidityExtrinsic(@Body() data: RedeemLiquidityExtrinsicDto): Promise<any> {
+    try {
+      return await this.dexService.redeemLiquidityExtrinsic(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('/extrinsic/swap-exact-in-for-out')
-  @ApiCreatedResponse({
-    description: 'Swap exact in for out extrinsic created succesfully',
-    type: SwapExactInForOutExtrinsicDto,
-    isArray: false,
-  })
-  swapExactInForOutExtrinsic(@Body() data: SwapExactInForOutExtrinsicDto): Promise<any> {
-    return this.dexService.swapExactInForOutExtrinsic(data);
+  @ApiResponse({ status: 200, description: 'The dex "swapExactInForOut" extrinsic has been successfully generated.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async swapExactInForOutExtrinsic(@Body() data: SwapExactInForOutExtrinsicDto): Promise<any> {
+    try {
+      return await this.dexService.swapExactInForOutExtrinsic(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('/extrinsic/swap-in-for-exact-out')
-  @ApiCreatedResponse({
-    description: 'Swap in for exact out extrinsic created succesfully',
-    type: SwapExactInForOutExtrinsicDto,
-    isArray: false,
-  })
-  swapInForExactOutExtrinsic(@Body() data: SwapInForExactOutExtrinsicDto): Promise<any> {
-    return this.dexService.swapInForExactOutExtrinsic(data);
+  @ApiResponse({ status: 200, description: 'The dex "swapInForExactOut" extrinsic has been successfully generated.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async swapInForExactOutExtrinsic(@Body() data: SwapInForExactOutExtrinsicDto): Promise<any> {
+    try {
+      return await this.dexService.swapInForExactOutExtrinsic(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('/extrinsics/execute')
-  @ApiCreatedResponse({
-    description: 'Dex extrinsics executed succesfully',
-    type: ExecuteExtrinsicsStatusEntity,
-    isArray: false,
-  })
-  executeExtrinsics(@Body() data: ExecuteExtrinsicsDto): Promise<ExecuteExtrinsicsStatusEntity> {
-    return this.dexService.executeExtrinsics(data);
+  @ApiResponse({ status: 200, description: 'The dex extrinsic has been successfully executed.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async executeExtrinsics(@Body() data: ExecuteExtrinsicsDto): Promise<ExecuteExtrinsicsStatusEntity> {
+    try {
+      return await this.dexService.executeExtrinsics(data);
+    } catch (error) {
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.toString() || 'Internal server error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

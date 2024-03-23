@@ -17,15 +17,35 @@ export class DexService {
   private wsProvider = new WsProvider(this.wsProviderEndpoint);
   private api = ApiPromise.create({ provider: this.wsProvider });
 
-  public async getLiquidityPools(): Promise<LiquidityPoolEntity[]> {
+  public async createDexQuery(method: string, ...params: any[]): Promise<any> {
     const api = await this.api;
 
-    return new Promise<LiquidityPoolEntity[]>(async (resolve, reject) => {
-      let liquidityPools: LiquidityPoolEntity[] = [];
-      const liquidityPoolStorage = await api.query["dexModule"]["liquidityPoolStorage"].entries();
+    let results: any = api.query["dexModule"][method].entries();
+    if (params.length > 0) {
+      results = (await api.query["dexModule"][method](...params)).toHuman();
+    }
 
-      if (liquidityPoolStorage.length > 0) {
-        liquidityPoolStorage.forEach(([{ args: [id] }, data]) => {
+    return results;
+  }
+
+  public async createDexTransaction(method: string, ...params: any[]): Promise<any> {
+    try {
+      const api = await this.api;
+      const extrinsic = api.tx["dexModule"][method](...params);
+
+      return extrinsic;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  public async getLiquidityPools(): Promise<LiquidityPoolEntity[]> {
+    let liquidityPools: LiquidityPoolEntity[] = [];
+
+    let liquidityPoolQuery = await this.createDexQuery("liquidityPoolStorage");
+    if (liquidityPoolQuery != null || liquidityPoolQuery != undefined) {
+      if (liquidityPoolQuery.length > 0) {
+        liquidityPoolQuery.forEach(([{ args: [id] }, data]) => {
           let jsonData = JSON.parse(data.toString());
           let assetPairs: AssetPairsEntity = {
             assetX: jsonData.assetPairs.assetX,
@@ -43,29 +63,23 @@ export class DexService {
           });
         });
       }
+    }
 
-      resolve(liquidityPools);
-    });
+    return liquidityPools;
   }
 
   public async getLiquidityPool(assetX: number, assetY: number): Promise<LiquidityPoolEntity> {
-    const api = await this.api;
+    let liquidityPool: LiquidityPoolEntity = new LiquidityPoolEntity();
 
-    return new Promise<LiquidityPoolEntity>(async (resolve, reject) => {
-      let liquidityPool: LiquidityPoolEntity = new LiquidityPoolEntity();
-      let data = {
-        assetX: assetX,
-        assetY: assetY
-      }
-
-      const liquidityPoolStorage = (await api.query["dexModule"]["liquidityPoolStorage"](data)).toHuman();
-      let jsonData = JSON.parse(JSON.stringify(liquidityPoolStorage));
+    let data = { assetX: assetX, assetY: assetY }
+    let liquidityPoolQuery = await this.createDexQuery("liquidityPoolStorage", data);
+    if (liquidityPoolQuery != null || liquidityPoolQuery != undefined) {
+      let jsonData = JSON.parse(JSON.stringify(liquidityPoolQuery));
 
       let assetPairs: AssetPairsEntity = {
         assetX: jsonData.assetPairs.assetX,
         assetY: jsonData.assetPairs.assetY,
       }
-
       let assetXBalance = parseFloat(String(jsonData.assetXBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
       let assetYBalance = parseFloat(String(jsonData.assetYBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
 
@@ -75,21 +89,19 @@ export class DexService {
         assetYBalance: assetYBalance,
         lpToken: jsonData.lpToken
       };
+    }
 
-      resolve(liquidityPool);
-    });
+    return liquidityPool;
   }
 
   public async getAccountLiquidityPoolByAccount(keypair: string): Promise<AccountLiquidityPoolEntity[]> {
-    const api = await this.api;
+    let accountLiquidityPools: AccountLiquidityPoolEntity[] = [];
 
-    return new Promise<AccountLiquidityPoolEntity[]>(async (resolve, reject) => {
-      let accountLiquidityPools: AccountLiquidityPoolEntity[] = [];
-      const liquidityPoolStorage = await api.query["dexModule"]["liquidityPoolStorage"].entries();
-
-      if (liquidityPoolStorage.length > 0) {
+    let liquidityPoolQuery = await this.createDexQuery("liquidityPoolStorage");
+    if (liquidityPoolQuery != null || liquidityPoolQuery != undefined) {
+      if (liquidityPoolQuery.length > 0) {
         let assetPairs: AssetPairsEntity[] = []
-        liquidityPoolStorage.forEach(([{ args: [id] }, data]) => {
+        liquidityPoolQuery.forEach(([{ args: [id] }, data]) => {
           let jsonData = JSON.parse(data.toString());
           assetPairs.push({
             assetX: jsonData.assetPairs.assetX,
@@ -99,9 +111,9 @@ export class DexService {
 
         if (assetPairs.length > 0) {
           for (let ap = 0; ap < assetPairs.length; ap++) {
-            const accountLiquidityPoolStorage = (await api.query["dexModule"]["accountLiquidityPoolStorage"]([keypair, assetPairs[ap]])).toHuman();
-            if (accountLiquidityPoolStorage != null) {
-              let jsonData = JSON.parse(JSON.stringify(accountLiquidityPoolStorage));
+            let accountLiquidityPoolQuery = await this.createDexQuery("accountLiquidityPoolStorage", [keypair, assetPairs[ap]]);
+            if (accountLiquidityPoolQuery != null || accountLiquidityPoolQuery != undefined) {
+              let jsonData = JSON.parse(JSON.stringify(accountLiquidityPoolQuery));
 
               if (jsonData.length > 0) {
                 for (let i = 0; i < jsonData.length; i++) {
@@ -126,112 +138,138 @@ export class DexService {
           }
         }
       }
+    }
 
-      resolve(accountLiquidityPools);
-    });
+    return accountLiquidityPools;
   }
 
   public async createLiquidityPoolExtrinsic(data: CreateLiquidityPoolExtrinsicDto): Promise<any> {
-    const api = await this.api;
+    try {
+      const createLiquidityPoolExtrinsic = await this.createDexTransaction(
+        "createLiquidityPool",
+        data.assetX,
+        BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
+        data.assetY,
+        BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS))),
+      );
 
-    const createLiquidityPoolExtrinsic = api.tx["dexModule"]["createLiquidityPool"](
-      data.assetX,
-      BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
-      data.assetY,
-      BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS))),
-    );
-
-    return createLiquidityPoolExtrinsic;
+      return createLiquidityPoolExtrinsic;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async provideLiquidityExtrinsic(data: ProvideLiquidityExtrinsicDto): Promise<any> {
-    const api = await this.api;
+    try {
+      const provideLiquidityExtrinsic = await this.createDexTransaction(
+        "provideLiquidity",
+        data.assetX,
+        BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
+        data.assetY,
+        BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS)))
+      );
 
-    const provideLiquidityExtrinsic = api.tx["dexModule"]["provideLiquidity"](
-      data.assetX,
-      BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
-      data.assetY,
-      BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS))),
-    );
-
-    return provideLiquidityExtrinsic;
+      return provideLiquidityExtrinsic;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async redeemLiquidityExtrinsic(data: RedeemLiquidityExtrinsicDto): Promise<any> {
-    const api = await this.api;
+    try {
+      const redeemLiquidityExtrinsic = await this.createDexTransaction(
+        "redeemLiquidity",
+        data.assetX,
+        data.assetY,
+        data.lpToken,
+      );
 
-    const redeemLiquidityExtrinsic = api.tx["dexModule"]["redeemLiquidity"](
-      data.assetX,
-      data.assetY,
-      data.lpToken,
-    );
-
-    return redeemLiquidityExtrinsic;
+      return redeemLiquidityExtrinsic;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async swapExactInForOutExtrinsic(data: SwapExactInForOutExtrinsicDto): Promise<any> {
-    const api = await this.api;
+    try {
+      const swapExactInForOutExtrinsic = await this.createDexTransaction(
+        "swapExactInForOut",
+        data.assetExactIn,
+        BigInt(data.assetExactInBalance * (10 ** parseInt(process.env.DECIMALS))),
+        data.assetMaxOut,
+      );
 
-    const swapExactInForOutExtrinsic = api.tx["dexModule"]["swapExactInForOut"](
-      data.assetExactIn,
-      BigInt(data.assetExactInBalance * (10 ** parseInt(process.env.DECIMALS))),
-      data.assetMaxOut,
-    );
-
-    return swapExactInForOutExtrinsic;
+      return swapExactInForOutExtrinsic;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async swapInForExactOutExtrinsic(data: SwapInForExactOutExtrinsicDto): Promise<any> {
-    const api = await this.api;
+    try {
+      const swapInForExactOutExtrinsic = await this.createDexTransaction(
+        "swapInForExactOut",
+        data.assetExactOut,
+        BigInt(data.assetExactOutBalance * (10 ** parseInt(process.env.DECIMALS))),
+        data.assetMinIn,
+      );
 
-    const swapInForExactOutExtrinsic = api.tx["dexModule"]["swapInForExactOut"](
-      data.assetExactOut,
-      BigInt(data.assetExactOutBalance * (10 ** parseInt(process.env.DECIMALS))),
-      data.assetMinIn,
-    );
-
-    return swapInForExactOutExtrinsic;
+      return swapInForExactOutExtrinsic;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async executeExtrinsics(extrinsics: ExecuteExtrinsicsDto): Promise<ExecuteExtrinsicsStatusEntity> {
-    const api = await this.api;
-
-    return new Promise<ExecuteExtrinsicsStatusEntity>((resolve, reject) => {
+    try {
+      const api = await this.api;
       const executeExtrinsic = api.tx(extrinsics.signedExtrincs);
-      executeExtrinsic.send((result: any) => {
-        if (result.isError) {
+
+      const sendTransaction = await new Promise<ExecuteExtrinsicsStatusEntity>((resolve, reject) => {
+        executeExtrinsic.send(async result => {
           let message: ExecuteExtrinsicsStatusEntity = {
-            message: "Something's went wrong!",
+            message: "",
             isError: true
-          }
-          resolve(message);
-        }
+          };
 
-        if (result.dispatchError) {
-          if (result.dispatchError.isModule) {
-            const decoded = api.registry.findMetaError(result.dispatchError.asModule);
-            const { docs, name, section } = decoded;
-
-            let message: ExecuteExtrinsicsStatusEntity = {
-              message: "Dispatch Error: " + name,
+          if (result.isError) {
+            message = {
+              message: "Something went wrong!",
               isError: true
-            }
+            };
             resolve(message);
           }
-        }
 
-        if (result.status.isInBlock) {
+          if (result.dispatchError) {
+            if (result.dispatchError.isModule) {
+              const decoded = api.registry.findMetaError(result.dispatchError.asModule);
+              const { docs, name, section } = decoded;
 
-        }
-
-        if (result.status.isFinalized) {
-          let message: ExecuteExtrinsicsStatusEntity = {
-            message: "Execution Complete",
-            isError: false
+              message = {
+                message: "Dispatch Error: " + name,
+                isError: true
+              };
+              reject(message);
+            }
           }
-          resolve(message);
-        }
-      })
-    });
+
+          if (result.status.isInBlock) { }
+
+          if (result.status.isFinalized) {
+            message = {
+              message: "Execution Complete",
+              isError: false
+            };
+            resolve(message);
+          }
+        }).catch(error => {
+          reject(error);
+        });
+      });
+
+      return sendTransaction;
+    } catch (error) {
+      throw error;
+    }
   }
 }
