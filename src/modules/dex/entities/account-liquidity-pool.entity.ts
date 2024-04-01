@@ -8,5 +8,4 @@ export class AccountLiquidityPoolEntity {
     assetYBalance: number = 0;
     lpToken: number = 0;
     lpTokenBalance: number = 0;
-    priceRatio: number = 0;
 }

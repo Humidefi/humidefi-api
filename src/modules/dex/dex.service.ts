@@ -3,11 +3,11 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { AssetPairsEntity } from '../assets/entities/asset-pairs.entity';
 import { LiquidityPoolEntity } from './entities/liquidity-pool.entity';
 import { AccountLiquidityPoolEntity } from './entities/account-liquidity-pool.entity';
-import { CreateLiquidityPoolExtrinsicDto } from './dto/create-liquidity-pool-extrinsic.dto';
-import { ProvideLiquidityExtrinsicDto } from './dto/provide-liquidity-extrinsic.dto';
+import { NewLiquidityPoolExtrinsicDto } from './dto/new-liquidity-pool-extrinsic.dto';
 import { RedeemLiquidityExtrinsicDto } from './dto/redeem-liquidity-extrinsic.dto';
 import { SwapExactInForOutExtrinsicDto } from './dto/swap-exact-in-for-out-extrinsic.dto';
 import { SwapInForExactOutExtrinsicDto } from './dto/swap-in-for-exact-out-extrinsic.dto';
+import { TransferAssetExtrinsicDto } from './dto/transfer-asset-extrinsics.dto';
 import { ExecuteExtrinsicsDto } from './dto/execute-extrinsics.dto';
 import { ExecuteExtrinsicsStatusEntity } from './entities/execute-extrinsincs-status.entity';
 
@@ -54,12 +54,20 @@ export class DexService {
 
           let assetXBalance = parseFloat(String(jsonData.assetXBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
           let assetYBalance = parseFloat(String(jsonData.assetYBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+          let price = parseFloat(String(jsonData.price).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+          let assetXFee = parseFloat(String(jsonData.assetXFee).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+          let assetYFee = parseFloat(String(jsonData.assetYFee).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+          let lpTokenBalance = parseFloat(String(jsonData.lpTokenBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
 
           liquidityPools.push({
             assetPairs: assetPairs,
             assetXBalance: assetXBalance,
             assetYBalance: assetYBalance,
-            lpToken: jsonData.lpToken
+            price: price,
+            assetXFee: assetXFee,
+            assetYFee: assetYFee,
+            lpToken: jsonData.lpToken,
+            lpTokenBalance: lpTokenBalance
           });
         });
       }
@@ -82,12 +90,20 @@ export class DexService {
       }
       let assetXBalance = parseFloat(String(jsonData.assetXBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
       let assetYBalance = parseFloat(String(jsonData.assetYBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+      let price = parseFloat(String(jsonData.price).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+      let assetXFee = parseFloat(String(jsonData.assetXFee).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+      let assetYFee = parseFloat(String(jsonData.assetYFee).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
+      let lpTokenBalance = parseFloat(String(jsonData.lpTokenBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
 
       liquidityPool = {
         assetPairs: assetPairs,
         assetXBalance: assetXBalance,
         assetYBalance: assetYBalance,
-        lpToken: jsonData.lpToken
+        price: price,
+        assetXFee: assetXFee,
+        assetYFee: assetYFee,
+        lpToken: jsonData.lpToken,
+        lpTokenBalance: lpTokenBalance
       };
     }
 
@@ -120,7 +136,6 @@ export class DexService {
                   let assetXBalance = parseFloat(String(jsonData[i].assetXBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
                   let assetYBalance = parseFloat(String(jsonData[i].assetYBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
                   let lpTokenBalance = parseFloat(String(jsonData[i].lpTokenBalance).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
-                  let priceRatio = parseFloat(String(jsonData[i].priceRatio).split(',').join('')) / (10 ** parseInt(process.env.DECIMALS));
 
                   accountLiquidityPools.push({
                     index: jsonData[i].index,
@@ -130,7 +145,6 @@ export class DexService {
                     assetYBalance: assetYBalance,
                     lpToken: jsonData[i].lpToken,
                     lpTokenBalance: lpTokenBalance,
-                    priceRatio: priceRatio,
                   });
                 }
               }
@@ -143,33 +157,21 @@ export class DexService {
     return accountLiquidityPools;
   }
 
-  public async createLiquidityPoolExtrinsic(data: CreateLiquidityPoolExtrinsicDto): Promise<any> {
+  public async newLiquidityPoolExtrinsic(data: NewLiquidityPoolExtrinsicDto): Promise<any> {
     try {
-      const createLiquidityPoolExtrinsic = await this.createDexTransaction(
-        "createLiquidityPool",
-        data.assetX,
+      let assetPairs = {
+        assetX: data.assetX,
+        assetY: data.assetY,
+      }
+
+      const newLiquidityExtrinsic = await this.createDexTransaction(
+        "newLiquidity",
+        assetPairs,
         BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
-        data.assetY,
         BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS))),
       );
 
-      return createLiquidityPoolExtrinsic;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  public async provideLiquidityExtrinsic(data: ProvideLiquidityExtrinsicDto): Promise<any> {
-    try {
-      const provideLiquidityExtrinsic = await this.createDexTransaction(
-        "provideLiquidity",
-        data.assetX,
-        BigInt(data.assetXBalance * (10 ** parseInt(process.env.DECIMALS))),
-        data.assetY,
-        BigInt(data.assetYBalance * (10 ** parseInt(process.env.DECIMALS)))
-      );
-
-      return provideLiquidityExtrinsic;
+      return newLiquidityExtrinsic;
     } catch (error) {
       throw error;
     }
@@ -177,11 +179,16 @@ export class DexService {
 
   public async redeemLiquidityExtrinsic(data: RedeemLiquidityExtrinsicDto): Promise<any> {
     try {
+      let assetPairs = {
+        assetX: data.assetX,
+        assetY: data.assetY,
+      }
+
       const redeemLiquidityExtrinsic = await this.createDexTransaction(
         "redeemLiquidity",
-        data.assetX,
-        data.assetY,
+        assetPairs,
         data.lpToken,
+        data.id
       );
 
       return redeemLiquidityExtrinsic;
@@ -215,6 +222,21 @@ export class DexService {
       );
 
       return swapInForExactOutExtrinsic;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  public async transferAssetExtrinsic(data: TransferAssetExtrinsicDto): Promise<any> {
+    try {
+      const transferAssetExtrinsic = await this.createDexTransaction(
+        "transferAsset",
+        data.asset,
+        BigInt(data.assetBalance * (10 ** parseInt(process.env.DECIMALS))),
+        data.accountId,
+      );
+
+      return transferAssetExtrinsic;
     } catch (error) {
       throw error;
     }
