@@ -13,9 +13,7 @@ Humidefi leverages Substrate’s interoperability, runtime customization, cross-
 * **Ecosystem** Fit: Strategically aligned with the core principles of the Polkadot ecosystem, including interoperability, customization, security, and scalability.
 * **Integration** with Xode: Enhances Xode's utility by integrating DeFi services, such as liquidity provision and asset swapping, within the Web3 Gaming platform.
 
-<br />
-
-# About the Repository
+## 💻 Code Repository
 
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
@@ -41,17 +39,17 @@ Humidefi leverages Substrate’s interoperability, runtime customization, cross-
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+### Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Installation
+### Installation
 
 ```bash
 $ npm install
 ```
 
-## Running the app
+### Running the app
 
 ```bash
 # development
@@ -64,7 +62,7 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
+### Test
 
 ```bash
 # unit tests
@@ -77,23 +75,19 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Support
+### Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## Stay in touch
+### Stay in touch
 
 - Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
 - Website - [https://nestjs.com](https://nestjs.com/)
 - Twitter - [@nestframework](https://twitter.com/nestframework)
 
-## License
+### License
 
 Nest is [MIT licensed](LICENSE).
-
-
-# Further help
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
 
 ## 🧑🏻‍💻 Contributing
 Contributions to the Humidefi DApp are welcome! To contribute, please follow these guidelines:
